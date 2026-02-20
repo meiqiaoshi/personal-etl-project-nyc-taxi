@@ -1,5 +1,6 @@
 import os
 import requests
+import duckdb
 
 
 BASE_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data"
@@ -25,6 +26,26 @@ def download_file(url: str, output_path: str):
                     f.write(chunk)
 
 
+def generate_metadata(file_path: str, year: int, month: int):
+    con = duckdb.connect(database=':memory:')
+    row_count = con.execute(f"SELECT COUNT(*) FROM '{file_path}'").fetchone()[0]
+
+    column_info = con.execute(f"DESCRIBE SELECT * FROM '{file_path}'").fetchall()
+    column_count = len(column_info)
+
+    metadata_path = f"data/raw/metadata_{year}-{month:02d}.txt"
+
+    with open(metadata_path, "w") as f:
+        f.write(f"File: {file_path}\n")
+        f.write(f"Rows: {row_count}\n")
+        f.write(f"Columns: {column_count}\n\n")
+        f.write("Schema:\n")
+        for col in column_info:
+            f.write(f"{col[0]} ({col[1]})\n")
+
+    print(f"Metadata written to {metadata_path}")
+
+
 def run_extract(year: int, month: int):
     os.makedirs("data/raw", exist_ok=True)
 
@@ -45,3 +66,4 @@ def run_extract(year: int, month: int):
     file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
     print(f"Download completed: {output_path}")
     print(f"File size: {file_size_mb:.2f} MB")
+    generate_metadata(output_path, year, month)
