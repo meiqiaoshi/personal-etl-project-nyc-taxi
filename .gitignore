@@ -1,0 +1,14 @@
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Jupyter runtime
+.jupyter/
+
+# Data files
+data/
+*.csv
+*.xlsx
+*.parquet
+
+__pycache__/
+*.py[cod]
