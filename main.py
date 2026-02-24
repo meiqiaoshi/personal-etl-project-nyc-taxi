@@ -5,6 +5,7 @@ from src.extract.download import run_extract
 from src.transform.clean import run_transform
 from src.load.build_warehouse import run_load
 from src.marts.hourly_demand import run_mart_hourly_demand
+from src.marts.daily_summary import run_mart_daily_summary
 
 
 @dataclass(frozen=True)
@@ -51,6 +52,8 @@ def run_stage(stage: str, ym: YearMonth):
         run_load(ym.year, ym.month)
     elif stage == "mart_hourly":
         run_mart_hourly_demand()
+    elif stage == "mart_daily":
+        run_mart_daily_summary()
     else:
         raise ValueError(f"Unknown stage: {stage}")
 
@@ -68,7 +71,7 @@ def main():
 
     parser.add_argument(
         "--stage",
-        choices=["extract", "transform", "load", "all", "mart_hourly"],
+        choices=["extract", "transform", "load", "all", "mart_hourly", "mart_daily"],
         required=True,
         help="Pipeline stage to run",
     )
