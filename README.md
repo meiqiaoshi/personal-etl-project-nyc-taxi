@@ -77,5 +77,44 @@ utils/
 - **CLI**: Single-month (`--year`, `--month`) and multi-month (`--start`, `--end`) with stages `extract`, `transform`, `load`, `all`, `mart_hourly`, `mart_daily`.
 
 **Possible next steps:**
-- Add `requirements.txt` and basic tests.
-- Optional: explicit schema validation in the transform layer.
+- Basic tests; optional schema validation in the transform layer.
+
+---
+
+## ⚙️ Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+Run all commands from the project root. The pipeline creates `data/raw`, `data/cleaned`, `data/warehouse`, and `data/marts` as needed (no manual setup).
+
+---
+
+## 📖 Usage
+
+**Single month — full pipeline (extract → transform → load):**
+```bash
+python main.py --year 2023 --month 1 --stage all
+```
+
+**Single month — one stage at a time:**
+```bash
+python main.py --year 2023 --month 1 --stage extract
+python main.py --year 2023 --month 1 --stage transform
+python main.py --year 2023 --month 1 --stage load
+```
+
+**Multi-month range:**
+```bash
+python main.py --start 2023-01 --end 2023-03 --stage all
+```
+
+**Build marts** (after at least one month is loaded into the warehouse):
+```bash
+python main.py --year 2023 --month 1 --stage mart_hourly
+python main.py --year 2023 --month 1 --stage mart_daily
+```
+*(Mart stages ignore year/month and build from all tables in the warehouse.)*
+
+**Stages:** `extract` | `transform` | `load` | `all` | `mart_hourly` | `mart_daily`
