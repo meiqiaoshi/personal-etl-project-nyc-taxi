@@ -68,7 +68,14 @@ utils/
 
 ## 🚀 Current Status
 
-Phase 0 — Project initialization and planning.
+**Phase 1–2 — ETL pipeline and marts implemented.**
 
-Next milestone:
-- Implement Extract stage for single-month ingestion.
+- **Extract**: Download monthly Parquet from NYC TLC; write to `data/raw/` with metadata (row count, schema).
+- **Transform**: Clean with DuckDB (trip_distance 0–100, fare ≥ 0, dropoff ≥ pickup); output to `data/cleaned/` with cleaning reports.
+- **Load**: Load cleaned data into DuckDB at `data/warehouse/taxi.duckdb` (one table per month, idempotent).
+- **Marts**: `mart_hourly_demand` and `mart_daily_summary` built from warehouse; exported to `data/marts/*.parquet`.
+- **CLI**: Single-month (`--year`, `--month`) and multi-month (`--start`, `--end`) with stages `extract`, `transform`, `load`, `all`, `mart_hourly`, `mart_daily`.
+
+**Possible next steps:**
+- Add `requirements.txt` and basic tests.
+- Optional: explicit schema validation in the transform layer.
