@@ -2,6 +2,7 @@ import os
 import duckdb
 from datetime import datetime
 from src.config import load_config
+from src.quality.report import generate_dq_report
 
 
 config = load_config()
@@ -159,4 +160,7 @@ def run_transform(year: int, month: int):
         f.write("- dropoff >= pickup\n")
 
     print(f"Cleaning report written to: {report_path}")
+
+    dq_path = generate_dq_report(year, month, raw_path, cleaned_path, config)
+    print(f"DQ report written to: {dq_path}")
     print(f"Transform completed for {filename}")
