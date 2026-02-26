@@ -1,6 +1,14 @@
 import os
 import duckdb
 from datetime import datetime
+from src.config import load_config
+
+
+config = load_config()
+
+min_dist = config["cleaning"]["trip_distance"]["min"]
+max_dist = config["cleaning"]["trip_distance"]["max"]
+min_fare = config["cleaning"]["fare_amount"]["min"]
 
 # Columns that must exist for the cleaning SQL to work (and optional type hint: substring to match)
 REQUIRED_COLUMNS = {
@@ -113,9 +121,9 @@ def run_transform(year: int, month: int):
         COPY (
             SELECT *
             FROM '{raw_path}'
-            WHERE trip_distance > 0
-              AND trip_distance < 100
-              AND fare_amount >= 0
+            WHERE trip_distance >= {min_dist}
+              AND trip_distance <= {max_dist}
+              AND fare_amount >= {min_fare}
               AND tpep_dropoff_datetime >= tpep_pickup_datetime
         )
         TO '{cleaned_path}'
