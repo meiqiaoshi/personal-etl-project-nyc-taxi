@@ -6,6 +6,7 @@ from src.transform.clean import run_transform
 from src.load.build_warehouse import run_load
 from src.marts.hourly_demand import run_mart_hourly_demand
 from src.marts.daily_summary import run_mart_daily_summary
+from src.pipeline.registry import ProcessingRegistry
 
 
 @dataclass(frozen=True)
@@ -98,10 +99,31 @@ def main():
 
     stages = ["extract", "transform", "load"] if args.stage == "all" else [args.stage]
 
+    registry = ProcessingRegistry("data/registry/processed_months.json")
+
     for ym in months:
-        print(f"\n=== Processing {ym.year}-{ym.month:02d} | stages: {', '.join(stages)} ===")
-        for st in stages:
-            run_stage(st, ym)
+        month_key = f"{ym.year}-{ym.month:02d}"
+
+        # Only skip when running the full pipeline, because partial stages
+        # may be intentionally rerun.
+        if args.stage == "all" and registry.is_processed(month_key):
+            print(f"\n=== Skipping {month_key} (already processed) ===")
+            continue
+
+        print(f"\n=== Processing {month_key} | stages: {', '.join(stages)} ===")
+
+        try:
+            for st in stages:
+                run_stage(st, ym)
+        except Exception as e:
+            # Do NOT mark processed if anything failed
+            print(f"!!! Failed processing {month_key}: {e}")
+            raise
+
+        # Mark processed only after all stages succeed
+        if args.stage == "all":
+            registry.mark_processed(month_key)
+            print(f"Marked processed: {month_key}")
 
     print("\nDone.")
 
