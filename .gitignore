@@ -12,3 +12,6 @@ data/
 
 __pycache__/
 *.py[cod]
+
+# registry
+data/registry/

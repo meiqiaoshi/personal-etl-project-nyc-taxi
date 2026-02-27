@@ -6,7 +6,7 @@ from src.transform.clean import run_transform
 from src.load.build_warehouse import run_load
 from src.marts.hourly_demand import run_mart_hourly_demand
 from src.marts.daily_summary import run_mart_daily_summary
-from src.pipeline.registry import ProcessingRegistry
+from src.pipeline.stage_registry import StageRegistry
 
 
 @dataclass(frozen=True)
@@ -97,33 +97,42 @@ def main():
             raise SystemExit("Error: --month must be between 1 and 12.")
         months = [YearMonth(args.year, args.month)]
 
-    stages = ["extract", "transform", "load"] if args.stage == "all" else [args.stage]
+    # stages = ["extract", "transform", "load"] if args.stage == "all" else [args.stage]
 
-    registry = ProcessingRegistry("data/registry/processed_months.json")
+    stage_registry = StageRegistry("data/registry/stage_status.json")
 
     for ym in months:
         month_key = f"{ym.year}-{ym.month:02d}"
 
-        # Only skip when running the full pipeline, because partial stages
-        # may be intentionally rerun.
-        if args.stage == "all" and registry.is_processed(month_key):
-            print(f"\n=== Skipping {month_key} (already processed) ===")
-            continue
-
-        print(f"\n=== Processing {month_key} | stages: {', '.join(stages)} ===")
-
-        try:
-            for st in stages:
-                run_stage(st, ym)
-        except Exception as e:
-            # Do NOT mark processed if anything failed
-            print(f"!!! Failed processing {month_key}: {e}")
-            raise
-
-        # Mark processed only after all stages succeed
+        # Determine stages for this run
         if args.stage == "all":
-            registry.mark_processed(month_key)
-            print(f"Marked processed: {month_key}")
+            target_stages = ["extract", "transform", "load"]
+        else:
+            target_stages = [args.stage]
+
+        print(f"\n=== Processing {month_key} | target stages: {', '.join(target_stages)} ===")
+
+        for st in target_stages:
+            # Resume logic only for all-stage runs:
+            if args.stage == "all" and stage_registry.is_done(month_key, st):
+                print(f"Skipping {month_key} {st} (already done)")
+                continue
+
+            print(f"--> Running {month_key} {st}")
+            try:
+                run_stage(st, ym)
+            except Exception as e:
+                # Mark failure at the exact stage
+                if args.stage == "all":
+                    stage_registry.mark_failed(month_key, st)
+                    print(f"Marked failed: {month_key} {st}")
+                print(f"!!! Failed at {month_key} {st}: {e}")
+                raise
+
+            # Mark success at the exact stage
+            if args.stage == "all":
+                stage_registry.mark_done(month_key, st)
+                print(f"Marked done: {month_key} {st}")
 
     print("\nDone.")
 
